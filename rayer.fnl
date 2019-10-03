@@ -1,5 +1,6 @@
 (local fennel (require :fennel-lang.fennel))
 (local fennel-view (require :fennel-lang.fennelview))
+(local magick (require :magick))
 
 (fn sanitize-scene [scene]
   (fn sanitize-objects [given]
@@ -35,11 +36,13 @@
              :kind gk
              :length gl
              :lookat gla
-             :power gpw} given]
+             :power gpw
+             :transform gt} given]
         {:position (or gp [-5 5 5])
          :kind (sanitize-kind gk)
          :length (or gl 10)
-         :power (or gpw (fn [v] v))
+         :transform (or gt (fn [v] v))
+         :power (or gpw 100)
          :lookat gla}))
     (let [given (or given [])
           lights []]
@@ -56,17 +59,28 @@
        :lookat (or gla [0 0 0])
        :up (or gup [0 1 0])
        :angle (or ga 60)}))
+  (fn sanitize-size [given]
+    (let [given (or given {})
+          {:width w
+           :height h} given]
+      {:width (or w 320)
+       :height (or h 200)}))
   {:objects (sanitize-objects scene.objects)
    :lights (sanitize-lights scene.lights)
-   :camera (sanitize-camera scene.camera)})
+   :camera (sanitize-camera scene.camera)
+   :size (sanitize-size scene.size)})
 
-(fn main [ray-file]
-  (when ray-file
-    (let [ray-scene (fennel.dofile ray-file)]
-      (when (not ray-scene)
-        (print "Missing scene.")
-        (os.exit -1))
-      (let [san-scene (sanitize-scene ray-scene)]
-        (print (fennel-view san-scene))))))
+(fn trace-image [scene]
+  (print (fennel-view scene)))
+
+(fn main [ray-file out-file]
+  (let [out-file (or out-file "out.png")]
+    (when ray-file
+      (let [ray-scene (fennel.dofile ray-file)]
+        (when (not ray-scene)
+          (print "Missing scene.")
+          (os.exit -1))
+        (let [san-scene (sanitize-scene ray-scene)]
+          (trace-image san-scene))))))
 
 (main ...)
